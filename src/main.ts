@@ -7,8 +7,8 @@ interface CanvasTasksSettings {
 }
 
 const DEFAULT_SETTINGS: CanvasTasksSettings = {
-	link: 'default',
-	token: 'default'
+	link: '',
+	token: ''
 }
 
 export default class CanvasTasksPlugin extends Plugin {
@@ -18,33 +18,32 @@ export default class CanvasTasksPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 
-		// // This creates an icon in the left ribbon.
-		// const ribbonIconEl = this.addRibbonIcon('dice', 'Canvas Tasks Plugin', (evt: MouseEvent) => {
-		// 	// Called when the user clicks the icon.
-		// 	new Notice('Updating Canvas Tasks...');
-		// 	// TODO: Add functionality to update tasks automatically
-		// });
-
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Canvas Tasks Plugin loaded!');
-
 		// This command replaces the current selection with tasks from Canvas
 		this.addCommand({
 			id: 'replace-add-canvas-tasks',
-			name: 'Replace Selection With Canvas Tasks',
+			name: 'Replace selection with canvas tasks',
 			editorCallback: async (editor: Editor, view: MarkdownView) => {
-				editor.replaceSelection(await generateOutput(this.settings.link, this.settings.token));
+				const output = await generateOutput(this.settings.link, this.settings.token);
+				if (output.startsWith('Error:')) {
+					new Notice(output);
+					return;
+				}
+				editor.replaceSelection(output);
 			}
 		});
 
 		// This command adds tasks from Canvas at the cursor
 		this.addCommand({
 			id: 'add-canvas-tasks',
-			name: 'Add Canvas Tasks at Cursor',
+			name: 'Add canvas tasks at cursor',
 			editorCallback: async (editor: Editor, view: MarkdownView) => {
+				const output = await generateOutput(this.settings.link, this.settings.token);
+				if (output.startsWith('Error:')) {
+					new Notice(output);
+					return;
+				}
 				editor.replaceRange(
-					await generateOutput(this.settings.link, this.settings.token),
+					output,
 					editor.getCursor(),
 				)
 			}
@@ -82,7 +81,7 @@ class CanvasTasksSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('Link to Canvas Page')
+			.setName('Link to Canvas page')
 			.setDesc('It should look like "https://YOURSCHOOL.instructure.com"')
 			.addText(text => text
 				.setPlaceholder('Enter your link')
@@ -93,7 +92,7 @@ class CanvasTasksSettingTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
-			.setName('Personal Access Token')
+			.setName('Personal access coken')
 			.setDesc('Found in your Canvas account settings')
 			.addText(text => text
 				.setPlaceholder('Enter your token')

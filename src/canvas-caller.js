@@ -2,12 +2,12 @@ export { getAllData, generateOutput };
 
 async function getAllData(url, token) {
 
-    console.log(url, token);
-
     // check if the arguments are valid
-    if (!url || !token) {
-        console.log("Invalid arguments");
-        return;
+    if (!url) {
+        return "Erorr: URL is not defined";
+    }
+    if (!token) {
+        return "Error: Token is not defined";
     }
 
     // json object to store the data
@@ -15,12 +15,9 @@ async function getAllData(url, token) {
         courses: []
     };
 
-    console.log("Getting course data...");
     const courseData = await getCourseData(url, token);
-    // print names of all courses
-    console.log("Found courses: ");
+
     for (let i = 0; i < courseData.length; i++) {
-        console.log(courseData[i].name);
         // add to data object
         data.courses.push({
             name: courseData[i].name,
@@ -33,13 +30,11 @@ async function getAllData(url, token) {
     for (let i = 0; i < courseData.length; i++) {
         // filter out courses that have a status of "unauthorized" (i.e. the course is not published yet)
         if (courseData[i].name == undefined) {
-            console.log("Course not published yet");
+            //course is not published yet or otherwise not accessible
             continue;
         }
 
         const courseId = courseData[i].id;
-        const courseName = courseData[i].name;
-        console.log("Getting course modules for: ", courseName);
         const courseModules = await getCourseModules(url, token, courseId);
 
         // add modules to data object
@@ -54,7 +49,6 @@ async function getAllData(url, token) {
         // loop over each module
         for (let j = 0; j < courseModules.length; j++) {
             const module = courseModules[j];
-            console.log("Getting assignments for:", module.name);
 
             // get assignments for each module
             const assignments = await getAssignments(url, token, courseId, module.id);
@@ -88,7 +82,7 @@ async function getCourseData(url, token) {
         const req = await requestUrl(courseUrl);
         return await req.json;
     } catch (err) {
-        console.log('Fetch Error :-S', err);
+        return `Error: Error fetching course data from ${url}`;
     }
 }
 
@@ -104,7 +98,6 @@ async function getCourseModules(url, token, courseId) {
         const req = await requestUrl(nextUrl);
         data.push(...req.json);
 
-        console.log(`Getting page ${page} of modules...`);
         if (req.headers.link == null) {
             nextUrl = null;
             continue;
@@ -130,7 +123,7 @@ async function getAssignments(url, token, courseId, moduleId) {
         const req = await requestUrl(assignmentUrl);
         return await req.json;
     } catch (err) {
-        console.log('Fetch Error :-S', err);
+        return `Error: Error fetching assignments from ${url + "/api/v1/courses/" + courseId + "/modules/" + moduleId}`;
     }
 }
 
@@ -141,7 +134,7 @@ async function getAssignmentDetails(url, token) {
         const req = await requestUrl(assignmentDetailUrl);
         return await req.json;
     } catch (err) { 
-        console.log('Fetch Error :-S', err);
+        return `Error: Error fetching details of assignment ${url}`;
     }
 }
 
@@ -150,8 +143,6 @@ async function generateOutput(url, token) {
 
     let output = "";
     const data = await getAllData(url, token);
-
-    console.log(data.courses);
 
     for (let i = 0; i < data.courses.length; i++) {
         if (data.courses[i].name == undefined) {
@@ -172,14 +163,6 @@ async function generateOutput(url, token) {
             }
         }
     }
-
-    //optional: write to file
-    // const fs = require('fs');
-    // fs.writeFile("output.md", output, function(err) {
-    //     if (err) {
-    //         console.log(err);
-    //     }
-    // });
 
     return output;
 }

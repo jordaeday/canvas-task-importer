@@ -6,6 +6,5 @@
 	"description": "Import tasks from Canvas LMS into vault.",
 	"author": "Jordan Day",
 	"authorUrl": "https://github.com/jordaeday",
-	"fundingUrl": "https://jordane.day",
 	"isDesktopOnly": true
 }
