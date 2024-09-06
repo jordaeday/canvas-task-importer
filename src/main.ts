@@ -24,11 +24,15 @@ export default class CanvasTasksPlugin extends Plugin {
 			name: 'Replace selection with canvas tasks',
 			editorCallback: async (editor: Editor, view: MarkdownView) => {
 				const output = await generateOutput(this.settings.link, this.settings.token);
-				if (output.startsWith('Error:')) {
-					new Notice(output);
+				if (!output) {
+					new Notice('No output from Canvas');
 					return;
 				}
-				editor.replaceSelection(output);
+				if (output.status === 'ERROR') {
+					new Notice(output.output);
+					return;
+				}
+				editor.replaceSelection(output.output);
 			}
 		});
 
@@ -38,12 +42,16 @@ export default class CanvasTasksPlugin extends Plugin {
 			name: 'Add canvas tasks at cursor',
 			editorCallback: async (editor: Editor, view: MarkdownView) => {
 				const output = await generateOutput(this.settings.link, this.settings.token);
-				if (output.startsWith('Error:')) {
-					new Notice(output);
+				if (!output) {
+					new Notice('No output from Canvas');
+					return;
+				}
+				if (output.status === 'ERROR') {
+					new Notice(output.output);
 					return;
 				}
 				editor.replaceRange(
-					output,
+					output.output,
 					editor.getCursor(),
 				)
 			}

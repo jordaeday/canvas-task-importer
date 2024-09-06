@@ -2,18 +2,24 @@ export { getAllData, generateOutput };
 
 async function getAllData(url, token) {
 
-    // check if the arguments are valid
-    if (!url) {
-        return "Erorr: URL is not defined";
-    }
-    if (!token) {
-        return "Error: Token is not defined";
-    }
-
     // json object to store the data
     const data = {
+        status: "IN PROGRESS",
+        output: "",
         courses: []
     };
+
+    // check if the arguments are valid
+    if (!url) {
+        data.status = "ERROR";
+        data.output = "Error: URL is not defined";
+        return;
+    }
+    if (!token) {
+        data.status = "ERROR";
+        data.output = "Error: Token is not defined";
+        return;
+    }
 
     const courseData = await getCourseData(url, token);
 
@@ -82,7 +88,9 @@ async function getCourseData(url, token) {
         const req = await requestUrl(courseUrl);
         return await req.json;
     } catch (err) {
-        return `Error: Error fetching course data from ${url}`;
+        data.status = "ERROR";
+        data.output = `Error: Error fetching course data from ${url}`;
+        return;
     }
 }
 
@@ -123,7 +131,9 @@ async function getAssignments(url, token, courseId, moduleId) {
         const req = await requestUrl(assignmentUrl);
         return await req.json;
     } catch (err) {
-        return `Error: Error fetching assignments from ${url + "/api/v1/courses/" + courseId + "/modules/" + moduleId}`;
+        data.status = "ERROR";
+        data.output = `Error: Error fetching assignments from ${url + "/api/v1/courses/" + courseId + "/modules/" + moduleId}`;
+        return;
     }
 }
 
@@ -134,7 +144,9 @@ async function getAssignmentDetails(url, token) {
         const req = await requestUrl(assignmentDetailUrl);
         return await req.json;
     } catch (err) { 
-        return `Error: Error fetching details of assignment ${url}`;
+        data.status = "ERROR";
+        data.output = `Error: Error fetching details of assignment ${url}`;
+        return;
     }
 }
 
@@ -164,5 +176,7 @@ async function generateOutput(url, token) {
         }
     }
 
-    return output;
+    data.output = output;
+    data.status = "SUCCESS";
+    return data;
 }
