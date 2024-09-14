@@ -21,7 +21,7 @@ export default class CanvasTasksPlugin extends Plugin {
 		// This command replaces the current selection with tasks from Canvas
 		this.addCommand({
 			id: 'replace-add-canvas-tasks',
-			name: 'Replace selection with canvas tasks',
+			name: 'Replace selection with Canvas tasks',
 			editorCallback: async (editor: Editor, view: MarkdownView) => {
 				const output = await generateOutput(this.settings.link, this.settings.token);
 				if (!output) {
@@ -39,7 +39,7 @@ export default class CanvasTasksPlugin extends Plugin {
 		// This command adds tasks from Canvas at the cursor
 		this.addCommand({
 			id: 'add-canvas-tasks',
-			name: 'Add canvas tasks at cursor',
+			name: 'Add Canvas tasks at cursor',
 			editorCallback: async (editor: Editor, view: MarkdownView) => {
 				const output = await generateOutput(this.settings.link, this.settings.token);
 				if (!output) {
