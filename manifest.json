@@ -1,10 +1,10 @@
 {
 	"id": "canvas-task-importer",
 	"name": "Canvas LMS Task Importer",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"minAppVersion": "0.15.0",
 	"description": "Import tasks from Canvas LMS into vault.",
 	"author": "Jordan Day",
 	"authorUrl": "https://github.com/jordaeday",
-	"isDesktopOnly": true
+	"isDesktopOnly": false
 }
