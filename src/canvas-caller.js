@@ -1,182 +1,67 @@
-export { getAllData, generateOutput };
+import { requestUrl } from "obsidian";
 
 async function getAllData(url, token) {
+	let upcoming = await requestUrl(
+		url + "/api/v1/users/self/upcoming_events" + "?access_token=" + token
+	);
+	let total = upcoming.json;
+	let missing = await requestUrl(
+		url +
+			"/api/v1/users/self/missing_submissions" +
+			"?access_token=" +
+			token
+	);
 
-    // json object to store the data
-    const data = {
-        status: "IN PROGRESS",
-        output: "",
-        courses: []
-    };
+	total = total.concat(missing.json);
 
-    // check if the arguments are valid
-    if (!url) {
-        data.status = "ERROR";
-        data.output = "Error: URL is not defined";
-        return;
-    }
-    if (!token) {
-        data.status = "ERROR";
-        data.output = "Error: Token is not defined";
-        return;
-    }
-
-    const courseData = await getCourseData(url, token);
-
-    for (let i = 0; i < courseData.length; i++) {
-        // add to data object
-        data.courses.push({
-            name: courseData[i].name,
-            id: courseData[i].id,
-            modules: []
-        });
-    }
-
-    // loop over each course id
-    for (let i = 0; i < courseData.length; i++) {
-        // filter out courses that have a status of "unauthorized" (i.e. the course is not published yet)
-        if (courseData[i].name == undefined) {
-            //course is not published yet or otherwise not accessible
-            continue;
-        }
-
-        const courseId = courseData[i].id;
-        const courseModules = await getCourseModules(url, token, courseId);
-
-        // add modules to data object
-        for (let j = 0; j < courseModules.length; j++) {
-            data.courses[i].modules.push({
-                name: courseModules[j].name,
-                id: courseModules[j].id,
-                assignments: []
-            });
-        }
-        
-        // loop over each module
-        for (let j = 0; j < courseModules.length; j++) {
-            const module = courseModules[j];
-
-            // get assignments for each module
-            const assignments = await getAssignments(url, token, courseId, module.id);
-            // loop over each assignment
-            for (let k = 0; k < assignments.length; k++) {
-                const assignment = assignments[k];
-                
-                // get the assignment details
-                if (assignment.url == undefined) {
-                    continue;
-                }
-                const assignmentDetails = await getAssignmentDetails(assignment.url, token);
-
-                // add assignments to data object
-                data.courses[i].modules[j].assignments.push({
-                    name: assignmentDetails.name,
-                    data: assignmentDetails
-                });
-
-            }
-        }
-    }
-
-    return data;
+	return total;
 }
-
-async function getCourseData(url, token) {
-    const courseUrl = url + "/api/v1/courses?access_token=" + token;
-
-    try {
-        const req = await requestUrl(courseUrl);
-        return await req.json;
-    } catch (err) {
-        data.status = "ERROR";
-        data.output = `Error: Error fetching course data from ${url}`;
-        return;
-    }
-}
-
-async function getCourseModules(url, token, courseId) {
-    const courseModuleUrl = url + "/api/v1/courses/" + courseId + "/modules?page=1&per_page=10&access_token=" + token;
-    
-    let data = [];
-    let nextUrl = courseModuleUrl;
-    let page = 1;
-
-    // loop through all pages of modules
-    while (nextUrl) {
-        const req = await requestUrl(nextUrl);
-        data.push(...req.json);
-
-        if (req.headers.link == null) {
-            nextUrl = null;
-            continue;
-        }
-        const headers = req.headers.link.split(",");
-        // if headers has "rel=next" then get the next url
-        if (headers[1].includes("rel=\"next\"")){
-            // increase page value
-            page++;
-            nextUrl = url + "/api/v1/courses/" + courseId + "/modules?page=" + page + "&per_page=10&access_token=" + token;
-        } else {
-            nextUrl = null;
-        }
-    }
-
-    return data;
-}
-
-async function getAssignments(url, token, courseId, moduleId) {
-    const assignmentUrl = url + "/api/v1/courses/" + courseId + "/modules/" + moduleId + "/items?access_token=" + token;
-
-    try {
-        const req = await requestUrl(assignmentUrl);
-        return await req.json;
-    } catch (err) {
-        data.status = "ERROR";
-        data.output = `Error: Error fetching assignments from ${url + "/api/v1/courses/" + courseId + "/modules/" + moduleId}`;
-        return;
-    }
-}
-
-async function getAssignmentDetails(url, token) {
-    const assignmentDetailUrl = url + "?access_token=" + token;
-
-    try {
-        const req = await requestUrl(assignmentDetailUrl);
-        return await req.json;
-    } catch (err) { 
-        data.status = "ERROR";
-        data.output = `Error: Error fetching details of assignment ${url}`;
-        return;
-    }
-}
-
 // formats the data object so that an obsidian-friendly markdown file can be generated
 async function generateOutput(url, token) {
+	let output = "";
+	const data = await getAllData(url, token);
+	for (let assignment of data) {
+		let date;
+		if (assignment.name != undefined) {
+			date = new Date(assignment.due_at);
+			date =
+				date.getFullYear() +
+				"-" +
+				("0" + (date.getMonth() + 1)).slice(-2) +
+				"-" +
+				("0" + date.getDate()).slice(-2);
+			output += "- [ ] " + assignment.name + "[due:: " + date + "]";
+		} else {
+			if (assignment.assignment != undefined) {
+				date = new Date(assignment.assignment.due_at);
+				date =
+					date.getFullYear() +
+					"-" +
+					("0" + (date.getMonth() + 1)).slice(-2) +
+					"-" +
+					("0" + date.getDate()).slice(-2);
+				output +=
+					" - [ ] " +
+					assignment.assignment.name +
+					" " +
+					" [due:: " +
+					date +
+					"]";
+			} else {
+				date = new Date(assignment.start_at);
+				date =
+					date.getFullYear() +
+					"-" +
+					("0" + (date.getMonth() + 1)).slice(-2) +
+					"-" +
+					("0" + date.getDate()).slice(-2);
+				output +=
+					"- [ ] " + assignment.title + "[scheduled:: " + date + "]";
+			}
+		}
 
-    let output = "";
-    const data = await getAllData(url, token);
-
-    for (let i = 0; i < data.courses.length; i++) {
-        if (data.courses[i].name == undefined) {
-            continue;
-        }
-        output += "# " + data.courses[i].name + "\n";
-        for (let j = 0; j < data.courses[i].modules.length; j++) {
-            output += "## " + data.courses[i].modules[j].name + "\n";
-            for (let k = 0; k < data.courses[i].modules[j].assignments.length; k++) {
-                if (data.courses[i].modules[j].assignments[k].name == undefined) {
-                    continue;
-                }
-                if (data.courses[i].modules[j].assignments[k].data.due_at == undefined) {
-                    continue;
-                }
-                output += "- [ ] " + data.courses[i].modules[j].assignments[k].name + " 📅 " + data.courses[i].modules[j].assignments[k].data.due_at;
-                output += "\n";
-            }
-        }
-    }
-
-    data.output = output;
-    data.status = "SUCCESS";
-    return data;
+		output += "\n";
+	}
+	return output;
 }
+export { getAllData, generateOutput };
