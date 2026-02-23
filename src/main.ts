@@ -100,7 +100,7 @@ class CanvasTasksSettingTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
-			.setName('Personal access coken')
+			.setName('Personal access token')
 			.setDesc('Found in your Canvas account settings')
 			.addText(text => text
 				.setPlaceholder('Enter your token')
